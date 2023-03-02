@@ -1,8 +1,8 @@
-## To use this project follow these steps:
+## To use this project follow these steps
 
 #### Works only with firefox browser
 
-#### Linux users:
+#### Linux users
   * Arch
     - `$ sudo pacman -S geckodriver`
 
