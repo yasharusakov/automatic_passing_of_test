@@ -7,7 +7,7 @@
     - `$ sudo pacman -S geckodriver`
 
 
-#### To Install all packages use `npm start` in terminal
+#### To Install all packages use `npm install` in terminal
 
 #### Create a .env file with these fiels
 * API_KEY=`YOUR API KEY`
