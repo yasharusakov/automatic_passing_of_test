@@ -1,13 +1,13 @@
-import dotenv from 'dotenv'
-dotenv.config({path: '../.env'})
+import dotenv from 'dotenv';
+import {Configuration, OpenAIApi} from 'openai';
 
-import {Configuration, OpenAIApi} from 'openai'
+dotenv.config();
 
 const config = new Configuration({
     apiKey: process.env.API_KEY
 })
 
-const openai = new OpenAIApi(config)
+const openai = new OpenAIApi(config);
 
 const runPrompt = async (prompt) => {
     const response = await openai.createCompletion({
@@ -15,7 +15,9 @@ const runPrompt = async (prompt) => {
         prompt: prompt,
         max_tokens: 2048,
         temperature: 1
-    })
+    }).catch(err => {
+        console.log(err)
+    });
 
     return response.data.choices[0].text
 }
