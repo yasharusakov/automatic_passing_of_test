@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node core/index.js"
+    "start": "node core/index.js",
+    "debug": "cross-env DEBUG_MODE=enable node core/index.js"
   },
   "keywords": [],
   "type": "module",
@@ -12,6 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "chalk": "^5.2.0",
+    "cross-env": "^7.0.3",
     "dotenv": "^16.0.3",
     "openai": "^3.2.1",
     "prompt-sync": "^4.2.0",

@@ -1,12 +1,12 @@
-let debug_mod = undefined 
-
-import {Builder, Browser, By, Key, until} from 'selenium-webdriver' 
+import {Builder, Browser, By, Key, until} from 'selenium-webdriver'
 import promptSync from 'prompt-sync' 
 import chalk from "chalk" 
 import dotenv from 'dotenv' 
 import {Configuration, OpenAIApi} from 'openai' 
 
 dotenv.config()
+
+console.log(`Debug mode ${chalk.yellow(process.env.DEBUG_MODE.includes('enable') ? 'enabled' : 'disabled')}`)
 
 const prompt = promptSync() 
 const USERNAME = prompt('Enter username: ') 
@@ -63,7 +63,7 @@ async function start() {
 
             // Send request to ChatGPT and get response
             const data = await runPrompt(isMultiQuiz ? templateMany : templateOne)
-                .catch((err) => console.log(debug_mod ? err : err.message)) 
+                .catch((err) => console.log(process.env.DEBUG_MODE ? err : err.message))
             const rightAnswers = data.split(',,,').map(item => item.replace(/\D/g, '')[0]) 
 
             // Some actions on webpage
@@ -76,12 +76,12 @@ async function start() {
                             try {
                                 await driver.findElement(By.className('test-multiquiz-save-button')).click()
                             } catch (err) {
-                                console.log(chalk. chalk.bgRed(chalk.white(debug_mod ? err : err.message)))
+                                console.log(chalk.bgRed(chalk.white(process.env.DEBUG_MODE.includes('enable') ? err : err.message)))
                             }
                         }
                     }) 
             } catch (err) {
-                console.log(chalk.bgRed(chalk.white(debug_mod ? err : err.message))) 
+                console.log(chalk.bgRed(chalk.white(process.env.DEBUG_MODE.includes('enable') ? err : err.message)))
             }
 
             console.log(`QUESTION IS ${chalk.white(currentQuestion)}, RIGHT ANSWERS: ${chalk.blue(rightAnswers)}`) 
@@ -103,7 +103,7 @@ async function start() {
         }, 2000)
 
     } catch (err) {
-        console.log(chalk.bgRed(chalk.white(debug_mod ? err : err.message))) 
+        console.log(chalk.bgRed(chalk.white(process.env.DEBUG_MODE.includes('enable') ? err : err.message)))
     } finally {
         setTimeout(async () => {
             await driver.quit() 
@@ -124,7 +124,7 @@ const runPrompt = async (prompt) => {
         max_tokens: 2048,
         temperature: 1
     }).catch(err => {
-        console.log(err)
+        console.log(process.env.DEBUG_MODE.includes('enable') ? err : err.message)
     }) 
 
     return response.data.choices[0].text
