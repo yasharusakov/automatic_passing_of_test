@@ -1,14 +1,23 @@
-require('dotenv').config()
-const {Builder, Browser, By, Key, until} = require('selenium-webdriver')
-const {runPrompt} = require("./chatgpt")
+import dotenv from 'dotenv'
+dotenv.config({path: '../.env'})
+import {Builder, Browser, By, Key, until} from 'selenium-webdriver'
+import {runPrompt} from "./chatgpt.js"
+import promptSync from 'prompt-sync'
+import chalk from "chalk"
+
+const URL = 'https://naurok.com.ua/test/join'
+
+const prompt = promptSync()
+const USERNAME = prompt('Enter username: ')
+const CODE = prompt('Enter code: ')
 
 async function passingOfTest() {
     let driver = await new Builder().forBrowser(Browser.FIREFOX).build()
     try {
         // JOIN TEST
-        await driver.get(process.env.NAUROK_URL)
-        await driver.findElement(By.id('joinform-gamecode')).sendKeys(process.env.NAUROK_GAMECODE, Key.ENTER)
-        await driver.findElement(By.id('joinform-name')).sendKeys(process.env.NAUROK_USERNAME, Key.ENTER)
+        await driver.get(URL)
+        await driver.findElement(By.id('joinform-name')).sendKeys(USERNAME, Key.ENTER)
+        await driver.findElement(By.id('joinform-gamecode')).sendKeys(CODE, Key.ENTER)
         await driver.findElement(By.className('join-button-test')).click()
 
         let currentQuestion = 1
@@ -33,7 +42,7 @@ async function passingOfTest() {
                             answer += `${value} `
                         })
                 }))
-                answers.push(`${i + 1}. ${answer}, `)
+                answers.push(`${i + 1}) ${answer},,, `)
             }))
 
             // CHECK IF QUESTION HAS MORE THAN ONE ANSWER TO CHOOSE
@@ -46,12 +55,12 @@ async function passingOfTest() {
             }
 
             // TEMPLATES FOR ChatGPT
-            const templateOne = `${question}, вкажи одну правильну відповіть тільки цифрою. Відповіді на запитання: ${answers}`
-            const templateMany = `${question}, вкажи цифрами правильні відповіді на запитання. Відповіді на запитання: ${answers}`
+            const templateOne = `Вкажи одну правильну відповіть тільки однією цифрою на це запитання "${question}". Відповіді на запитання: ${answers}`
+            const templateMany = `Вкажи правильні відповіді тільки цифрами через кому на це запитання "${question}". Відповіді на запитання: ${answers}`
 
             // SEND REQUEST TO ChatGPT AND GET RESPONSE
             const data = await runPrompt(isMultiQuiz ? templateMany : templateOne)
-            const rightAnswers = data.replace(/\D/g, '').split('')
+            const rightAnswers = data.split(',,,').map(item => item.replace(/\D/g, '')[0])
 
             // SOME ACTIONS ON WEBPAGE
             try {
@@ -62,20 +71,16 @@ async function passingOfTest() {
                         if (isMultiQuiz) {
                             try {
                                 await driver.findElement(By.className('test-multiquiz-save-button')).click()
-                            } catch (err) {}
+                            } catch (err) {
+                                console.log(chalk. chalk.bgRed(chalk.white(err.message)))
+                            }
                         }
                     })
             } catch (err) {
-                console.log(err)
+                console.log(chalk.bgRed(chalk.white(err.message)))
             }
 
-            console.log(data)
-
-            console.log(`
-                CURRENT QUESTION IS ${currentQuestion}. ${question} \n
-                RIGHT ANSWERS: ${rightAnswers} \n
-                [END OF ${currentQuestion} QUESTION]
-            `)
+            console.log(`QUESTION IS ${chalk.white(currentQuestion)}, RIGHT ANSWERS: ${chalk.blue(rightAnswers)}`)
         }
 
         // CHECK CURRENT QUESTION AND COMPARE
@@ -94,7 +99,7 @@ async function passingOfTest() {
         }, 2000)
 
     } catch (err) {
-        console.log(err)
+        console.log(chalk.bgRed(chalk.white(err.message)))
     } finally {
         setTimeout(async () => {
             await driver.quit()
@@ -102,4 +107,4 @@ async function passingOfTest() {
     }
 }
 
-module.exports = {passingOfTest}
+export {passingOfTest}

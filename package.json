@@ -2,16 +2,19 @@
   "name": "automatic_passing_of_test",
   "version": "1.0.0",
   "description": "",
-  "main": "chatgpt.js",
+  "main": "src/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
+  "type": "module",
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "chalk": "^5.2.0",
     "dotenv": "^16.0.3",
     "openai": "^3.2.1",
+    "prompt-sync": "^4.2.0",
     "selenium-webdriver": "^4.8.1"
   }
 }

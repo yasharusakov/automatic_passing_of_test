@@ -1,4 +1,4 @@
-const {passingOfTest} = require('./passing_of_test')
+import {passingOfTest} from "./passing_of_test.js"
 
 const start = async () => {
     await passingOfTest()
