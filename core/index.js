@@ -6,24 +6,23 @@ import dotenv from 'dotenv'
 
 dotenv.config()
 
-// For debugging
-const debugMode = process.env.DEBUG_MODE.includes('enable')
-const debugModeError = (err) => console.log(`${chalk.red(debugMode ? err : err.message)}`)
-console.log(`Debug mode ${chalk.yellow(debugMode ? 'enabled' : 'disabled')}`)
+// Cool error print
+const errorPrint = err => console.error(chalk.red(err))
 
 const prompt = promptSync()
-const USERNAME = prompt('Enter username: ')
-const CODE = prompt('Enter code: ')
+const username = prompt('Enter username: ')
+const code = prompt('Enter code: ')
 
 async function start() {
     let driver = await new Builder().forBrowser(Browser.FIREFOX).build()
+
     try {
         const urlOfRegistration = 'https://naurok.com.ua/test/join'
 
         // Join test
         await driver.get(urlOfRegistration)
-        await driver.findElement(By.id('joinform-name')).sendKeys(USERNAME, Key.ENTER)
-        await driver.findElement(By.id('joinform-gamecode')).sendKeys(CODE, Key.ENTER)
+        await driver.findElement(By.id('joinform-name')).sendKeys(username, Key.ENTER)
+        await driver.findElement(By.id('joinform-gamecode')).sendKeys(code, Key.ENTER)
         await driver.findElement(By.className('join-button-test')).click()
 
         let currentQuestion = 1
@@ -50,7 +49,7 @@ async function start() {
                 }))
                 answers.push(`${i + 1}) ${answer},,, `)
             }))
-                .catch(debugModeError)
+                .catch(errorPrint)
 
             // Check if question has more than one answer to choose
             let isMultiQuiz
@@ -59,17 +58,17 @@ async function start() {
                 isMultiQuiz = await driver.findElement(By.css('.test-multiquiz-save-line span')).isDisplayed()
             } catch (err) {
                 isMultiQuiz = false
-                // debugModeError(err)
+                // errorPrint(err)
             }
 
             // Templates for ChatGPT
-            const templateOne = `Вкажи одну правильну відповіть тільки однією цифрою на це запитання "${question}". Відповіді на запитання: ${answers}`
-            const templateMany = `Вкажи правильні відповіді тільки цифрами через кому на це запитання "${question}". Відповіді на запитання: ${answers}`
+            const templateOne = `Вкажи одну правильну відповіть цифрою на це запитання "${question}". Відповіді на запитання: ${answers}`
+            const templateMany = `Вкажи декілька правильних відповідей цифрами на це запитання "${question}". Відповіді на запитання: ${answers}`
 
             // Send request to ChatGPT and get response
             console.log(chalk.blue('Waiting for response from ChatGPT...'))
             const data = await runPrompt(isMultiQuiz ? templateMany : templateOne)
-                .catch(debugModeError)
+                .catch(errorPrint)
 
             const rightAnswers = data.split(',,,').map(item => item.replace(/\D/g, '')[0])
 
@@ -82,14 +81,14 @@ async function start() {
                         await driver.findElement(By.className('test-multiquiz-save-button')).click()
                     }
                 })
-                .catch(debugModeError)
+                .catch(errorPrint)
 
-            console.log(`Question is ${chalk.white(currentQuestion)}, Right answers: ${chalk.blue(rightAnswers)}`)
+            console.log(`${chalk.white([currentQuestion])}, Right answers: ${chalk.blue(rightAnswers)}`)
         }
 
         // Check current question and compare
         // If true call function again
-        await setInterval(async () => {
+        setInterval(async () => {
             await driver.findElement(By.className('currentActiveQuestion')).getText()
                 .then(async data => {
                     const number = Number(data)
@@ -98,11 +97,10 @@ async function start() {
                     currentQuestion = number
                     await passingOfTest()
                 })
-                .catch(debugModeError)
-        }, 2000)
+        }, 3000)
 
     } catch (err) {
-        debugModeError(err)
+        errorPrint(err)
     } finally {
         setTimeout(async () => {
             await driver.quit()

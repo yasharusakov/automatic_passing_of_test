@@ -14,5 +14,3 @@
   * Your api key you can find there https://platform.openai.com/account/api-keys
 
 #### To start this app use `npm start` in terminal
-
-#### To start app with debug mode use `npm run debug` in terminal
