@@ -1,14 +1,14 @@
 import {Builder, Browser, By, Key, until} from 'selenium-webdriver'
+import {Configuration, OpenAIApi} from 'openai'
 import promptSync from 'prompt-sync'
 import chalk from "chalk"
 import dotenv from 'dotenv'
-import {Configuration, OpenAIApi} from 'openai'
 
 dotenv.config()
 
-// if enable return true
+// For debugging
 const debugMode = process.env.DEBUG_MODE.includes('enable')
-const debugModeError = (err) => console.log(`${chalk.bgRed(chalk.white(debugMode ? err : err.message))}`)
+const debugModeError = (err) => console.log(`${chalk.red(debugMode ? err : err.message)}`)
 console.log(`Debug mode ${chalk.yellow(debugMode ? 'enabled' : 'disabled')}`)
 
 const prompt = promptSync()
@@ -28,10 +28,10 @@ async function start() {
 
         let currentQuestion = 1
 
-        await fn()
+        await passingOfTest()
 
         // Passing of test
-        async function fn() {
+        async function passingOfTest() {
             // Get question and answers
             const question = await driver.wait(until.elementLocated(By.css('.test-content-text-inner p'))).getText()
             const elements = await driver.wait(until.elementsLocated(By.className('question-option-inner-content')))
@@ -59,7 +59,7 @@ async function start() {
                 isMultiQuiz = await driver.findElement(By.css('.test-multiquiz-save-line span')).isDisplayed()
             } catch (err) {
                 isMultiQuiz = false
-                debugModeError(err)
+                // debugModeError(err)
             }
 
             // Templates for ChatGPT
@@ -67,7 +67,10 @@ async function start() {
             const templateMany = `Вкажи правильні відповіді тільки цифрами через кому на це запитання "${question}". Відповіді на запитання: ${answers}`
 
             // Send request to ChatGPT and get response
+            console.log(chalk.blue('Waiting for response from ChatGPT...'))
             const data = await runPrompt(isMultiQuiz ? templateMany : templateOne)
+                .catch(debugModeError)
+
             const rightAnswers = data.split(',,,').map(item => item.replace(/\D/g, '')[0])
 
             // Some actions on webpage
@@ -77,12 +80,11 @@ async function start() {
                 .then(async () => {
                     if (isMultiQuiz) {
                         await driver.findElement(By.className('test-multiquiz-save-button')).click()
-                            .catch(debugModeError)
                     }
                 })
                 .catch(debugModeError)
 
-            console.log(`QUESTION IS ${chalk.white(currentQuestion)}, RIGHT ANSWERS: ${chalk.blue(rightAnswers)}`)
+            console.log(`Question is ${chalk.white(currentQuestion)}, Right answers: ${chalk.blue(rightAnswers)}`)
         }
 
         // Check current question and compare
@@ -94,7 +96,7 @@ async function start() {
                     if (number === currentQuestion) return
 
                     currentQuestion = number
-                    await fn()
+                    await passingOfTest()
                 })
                 .catch(debugModeError)
         }, 2000)
@@ -121,10 +123,8 @@ const runPrompt = async (prompt) => {
         max_tokens: 2048,
         temperature: 1
     })
-        .catch(debugModeError)
 
     return response.data.choices[0].text
 }
 
 start()
-    .catch(debugModeError)
