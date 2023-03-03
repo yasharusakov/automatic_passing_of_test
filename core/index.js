@@ -1,4 +1,4 @@
-let debug_mod = false;
+let debug_mod = undefined;
 
 import {Builder, Browser, By, Key, until} from 'selenium-webdriver';
 import promptSync from 'prompt-sync';
