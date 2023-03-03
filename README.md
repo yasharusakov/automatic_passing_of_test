@@ -13,4 +13,4 @@
 * API_KEY=`YOUR API KEY`
   * Your api key you can find there https://platform.openai.com/account/api-keys
 
-#### To start this app use `node index.js` in terminal
+#### To start this app use `npm start` in terminal

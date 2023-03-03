@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "run": "node core/index.js"
+    "start": "node core/index.js"
   },
   "keywords": [],
   "type": "module",
