@@ -6,19 +6,19 @@ import chalk from "chalk"
 import dotenv from 'dotenv' 
 import {Configuration, OpenAIApi} from 'openai' 
 
-dotenv.config() 
+dotenv.config()
 
 const prompt = promptSync() 
 const USERNAME = prompt('Enter username: ') 
 const CODE = prompt('Enter code: ') 
 
-async function passingOfTest() {
+async function start() {
     let driver = await new Builder().forBrowser(Browser.FIREFOX).build() 
     try {
-        const url_registration = 'https://naurok.com.ua/test/join' 
+        const urlOfRegistration = 'https://naurok.com.ua/test/join'
 
         // Join test
-        await driver.get(url_registration) 
+        await driver.get(urlOfRegistration)
         await driver.findElement(By.id('joinform-name')).sendKeys(USERNAME, Key.ENTER) 
         await driver.findElement(By.id('joinform-gamecode')).sendKeys(CODE, Key.ENTER) 
         await driver.findElement(By.className('join-button-test')).click() 
@@ -130,8 +130,4 @@ const runPrompt = async (prompt) => {
     return response.data.choices[0].text
 }
 
-const start = async () => {
-    await passingOfTest() 
-}
-
-start() 
+start()
