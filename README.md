@@ -15,4 +15,4 @@
 
 #### To start this app use `npm start` in terminal
 
-### To start app with debug mode use `npm run debug` in terminal
+#### To start app with debug mode use `npm run debug` in terminal

@@ -1,90 +1,88 @@
 import {Builder, Browser, By, Key, until} from 'selenium-webdriver'
-import promptSync from 'prompt-sync' 
-import chalk from "chalk" 
-import dotenv from 'dotenv' 
-import {Configuration, OpenAIApi} from 'openai' 
+import promptSync from 'prompt-sync'
+import chalk from "chalk"
+import dotenv from 'dotenv'
+import {Configuration, OpenAIApi} from 'openai'
 
 dotenv.config()
 
-console.log(`Debug mode ${chalk.yellow(process.env.DEBUG_MODE.includes('enable') ? 'enabled' : 'disabled')}`)
+// if enable return true
+const debugMode = process.env.DEBUG_MODE.includes('enable')
+const debugModeError = (err) => console.log(`${chalk.bgRed(chalk.white(debugMode ? err : err.message))}`)
+console.log(`Debug mode ${chalk.yellow(debugMode ? 'enabled' : 'disabled')}`)
 
-const prompt = promptSync() 
-const USERNAME = prompt('Enter username: ') 
-const CODE = prompt('Enter code: ') 
+const prompt = promptSync()
+const USERNAME = prompt('Enter username: ')
+const CODE = prompt('Enter code: ')
 
 async function start() {
-    let driver = await new Builder().forBrowser(Browser.FIREFOX).build() 
+    let driver = await new Builder().forBrowser(Browser.FIREFOX).build()
     try {
         const urlOfRegistration = 'https://naurok.com.ua/test/join'
 
         // Join test
         await driver.get(urlOfRegistration)
-        await driver.findElement(By.id('joinform-name')).sendKeys(USERNAME, Key.ENTER) 
-        await driver.findElement(By.id('joinform-gamecode')).sendKeys(CODE, Key.ENTER) 
-        await driver.findElement(By.className('join-button-test')).click() 
+        await driver.findElement(By.id('joinform-name')).sendKeys(USERNAME, Key.ENTER)
+        await driver.findElement(By.id('joinform-gamecode')).sendKeys(CODE, Key.ENTER)
+        await driver.findElement(By.className('join-button-test')).click()
 
-        let currentQuestion = 1 
+        let currentQuestion = 1
 
-        await fn() 
+        await fn()
 
         // Passing of test
         async function fn() {
             // Get question and answers
-            const question = await driver.wait(until.elementLocated(By.css('.test-content-text-inner p'))).getText() 
-            const elements = await driver.wait(until.elementsLocated(By.className('question-option-inner-content'))) 
-            const answers = [] 
+            const question = await driver.wait(until.elementLocated(By.css('.test-content-text-inner p'))).getText()
+            const elements = await driver.wait(until.elementsLocated(By.className('question-option-inner-content')))
+            const answers = []
 
             await Promise.all(elements.map(async (element, i) => {
-                const paragraphs = await element.findElements(By.css('p')) 
+                const paragraphs = await element.findElements(By.css('p'))
 
-                let answer = '' 
+                let answer = ''
 
                 await Promise.all(paragraphs.map(async paragraph => {
                     await paragraph.getText()
                         .then(value => {
                             answer += `${value} `
-                        }) 
+                        })
                 }))
-                answers.push(`${i + 1}) ${answer},,, `) 
+                answers.push(`${i + 1}) ${answer},,, `)
             }))
+                .catch(debugModeError)
 
             // Check if question has more than one answer to choose
-            let isMultiQuiz 
+            let isMultiQuiz
 
             try {
-                isMultiQuiz = await driver.findElement(By.css('.test-multiquiz-save-line span')).isDisplayed() 
+                isMultiQuiz = await driver.findElement(By.css('.test-multiquiz-save-line span')).isDisplayed()
             } catch (err) {
-                isMultiQuiz = false 
+                isMultiQuiz = false
+                debugModeError(err)
             }
 
             // Templates for ChatGPT
-            const templateOne = `Вкажи одну правильну відповіть тільки однією цифрою на це запитання "${question}". Відповіді на запитання: ${answers}` 
-            const templateMany = `Вкажи правильні відповіді тільки цифрами через кому на це запитання "${question}". Відповіді на запитання: ${answers}` 
+            const templateOne = `Вкажи одну правильну відповіть тільки однією цифрою на це запитання "${question}". Відповіді на запитання: ${answers}`
+            const templateMany = `Вкажи правильні відповіді тільки цифрами через кому на це запитання "${question}". Відповіді на запитання: ${answers}`
 
             // Send request to ChatGPT and get response
             const data = await runPrompt(isMultiQuiz ? templateMany : templateOne)
-                .catch((err) => console.log(process.env.DEBUG_MODE ? err : err.message))
-            const rightAnswers = data.split(',,,').map(item => item.replace(/\D/g, '')[0]) 
+            const rightAnswers = data.split(',,,').map(item => item.replace(/\D/g, '')[0])
 
             // Some actions on webpage
-            try {
-                await Promise.all(rightAnswers.map(async rightAnswer => {
-                    await elements[Number(rightAnswer) - 1].click() 
-                }))
-                    .then(async () => {
-                        if (isMultiQuiz) {
-                            try {
-                                await driver.findElement(By.className('test-multiquiz-save-button')).click()
-                            } catch (err) {
-                                console.log(chalk.bgRed(chalk.white(process.env.DEBUG_MODE.includes('enable') ? err : err.message)))
-                            }
-                        }
-                    }) 
-            } catch (err) {
-                console.log(chalk.bgRed(chalk.white(process.env.DEBUG_MODE.includes('enable') ? err : err.message)))
-            }
+            await Promise.all(rightAnswers.map(async rightAnswer => {
+                await elements[Number(rightAnswer) - 1].click()
+            }))
+                .then(async () => {
+                    if (isMultiQuiz) {
+                        await driver.findElement(By.className('test-multiquiz-save-button')).click()
+                            .catch(debugModeError)
+                    }
+                })
+                .catch(debugModeError)
 
-            console.log(`QUESTION IS ${chalk.white(currentQuestion)}, RIGHT ANSWERS: ${chalk.blue(rightAnswers)}`) 
+            console.log(`QUESTION IS ${chalk.white(currentQuestion)}, RIGHT ANSWERS: ${chalk.blue(rightAnswers)}`)
         }
 
         // Check current question and compare
@@ -92,21 +90,20 @@ async function start() {
         await setInterval(async () => {
             await driver.findElement(By.className('currentActiveQuestion')).getText()
                 .then(async data => {
-                    const number = Number(data) 
-                    if (number === currentQuestion) {
-                        return 
-                    }
+                    const number = Number(data)
+                    if (number === currentQuestion) return
 
-                    currentQuestion = number 
-                    await fn() 
+                    currentQuestion = number
+                    await fn()
                 })
+                .catch(debugModeError)
         }, 2000)
 
     } catch (err) {
-        console.log(chalk.bgRed(chalk.white(process.env.DEBUG_MODE.includes('enable') ? err : err.message)))
+        debugModeError(err)
     } finally {
         setTimeout(async () => {
-            await driver.quit() 
+            await driver.quit()
         }, 1000000)
     }
 }
@@ -115,7 +112,7 @@ const config = new Configuration({
     apiKey: process.env.API_KEY
 })
 
-const openai = new OpenAIApi(config) 
+const openai = new OpenAIApi(config)
 
 const runPrompt = async (prompt) => {
     const response = await openai.createCompletion({
@@ -123,11 +120,11 @@ const runPrompt = async (prompt) => {
         prompt: prompt,
         max_tokens: 2048,
         temperature: 1
-    }).catch(err => {
-        console.log(process.env.DEBUG_MODE.includes('enable') ? err : err.message)
-    }) 
+    })
+        .catch(debugModeError)
 
     return response.data.choices[0].text
 }
 
 start()
+    .catch(debugModeError)
