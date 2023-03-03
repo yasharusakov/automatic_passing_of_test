@@ -33,7 +33,7 @@ async function passingOfTest() {
                             answer += `${value} `
                         })
                 }))
-                answers.push(`${i + 1}) ${answer}`)
+                answers.push(`${i + 1}. ${answer}, `)
             }))
 
             // CHECK IF QUESTION HAS MORE THAN ONE ANSWER TO CHOOSE
@@ -46,8 +46,8 @@ async function passingOfTest() {
             }
 
             // TEMPLATES FOR ChatGPT
-            const templateOne = `Напиши правильний варіант цифрою. Запитання: "${question}". Відповіді на запитання: ${answers}`
-            const templateMany = `Напиши усі правильні варіанти цифрами. Запитання: "${question}". Відповіді на запитання: ${answers}`
+            const templateOne = `${question}, вкажи одну правильну відповіть тільки цифрою. Відповіді на запитання: ${answers}`
+            const templateMany = `${question}, вкажи цифрами правильні відповіді на запитання. Відповіді на запитання: ${answers}`
 
             // SEND REQUEST TO ChatGPT AND GET RESPONSE
             const data = await runPrompt(isMultiQuiz ? templateMany : templateOne)
@@ -60,12 +60,16 @@ async function passingOfTest() {
                 }))
                     .then(async () => {
                         if (isMultiQuiz) {
-                            await driver.findElement(By.className('test-multiquiz-save-button')).click()
+                            try {
+                                await driver.findElement(By.className('test-multiquiz-save-button')).click()
+                            } catch (err) {}
                         }
                     })
             } catch (err) {
                 console.log(err)
             }
+
+            console.log(data)
 
             console.log(`
                 CURRENT QUESTION IS ${currentQuestion}. ${question} \n
@@ -87,7 +91,8 @@ async function passingOfTest() {
                     currentQuestion = number
                     await fn()
                 })
-        }, 1500)
+        }, 2000)
+
     } catch (err) {
         console.log(err)
     } finally {
