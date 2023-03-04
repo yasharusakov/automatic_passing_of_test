@@ -1,7 +1,8 @@
 import {Builder, Browser, By, Key, until} from 'selenium-webdriver'
 import {Configuration, OpenAIApi} from 'openai'
+import firefox from 'selenium-webdriver/firefox.js'
 import promptSync from 'prompt-sync'
-import chalk from "chalk"
+import chalk from 'chalk'
 import dotenv from 'dotenv'
 
 dotenv.config()
@@ -14,7 +15,18 @@ const username = prompt('Enter username: ')
 const code = prompt('Enter code: ')
 
 async function start() {
-    let driver = await new Builder().forBrowser(Browser.FIREFOX).build()
+    const socks = [9050, 9052, 9053, 9054]
+    let choose_sosk = socks[Math.floor(Math.random() * socks.length)]
+
+    // Connection via Tor
+    let options = new firefox.Options()
+    options.setPreference('network.proxy.type', 1) 
+    options.setPreference('network.proxy.socks', '127.0.0.1')
+    options.setPreference('network.proxy.socks_port', choose_sosk)
+    options.setPreference('network.proxy.socks_remote_dns', true) 
+    options.setPreference('network.proxy.socks_version', 5)
+
+    let driver = await new Builder().forBrowser(Browser.FIREFOX).setFirefoxOptions(options).build()
 
     try {
         const urlOfRegistration = 'https://naurok.com.ua/test/join'
