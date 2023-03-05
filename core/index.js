@@ -10,6 +10,7 @@ dotenv.config()
 // Cool error print
 const errorPrint = err => console.error(chalk.red(err))
 
+// Data to join test
 const prompt = promptSync()
 const username = prompt('Enter username: ')
 const code = prompt('Enter code: ')
@@ -32,6 +33,7 @@ async function start() {
     // Random User-Agent
     options.setPreference('general.useragent.override', randomUserAgent.getRandom())
 
+    // Launch driver
     let driver = await new Builder()
         .forBrowser(Browser.FIREFOX)
         .withCapabilities(options)
@@ -81,8 +83,8 @@ async function start() {
             }
 
             // Templates for ChatGPT
-            const templateOne = `Вкажи одну правильну відповіть цифрою на це запитання "${question}". Відповіді на запитання: ${answers}`
-            const templateMany = `Вкажи декілька правильних відповідей цифрами на це запитання "${question}". Відповіді на запитання: ${answers}`
+            const templateOne = `Обери одну правильну відповіть цифрою на це запитання "${question}". Варіанти відповідей на запитання: ${answers}`
+            const templateMany = `Обери тільки правильні відповіді цифрами на це запитання "${question}". Варіанти відповідей на запитання: ${answers}`
 
             // Send request to ChatGPT and get response
             console.log(chalk.blue('Waiting for response from ChatGPT...'))
@@ -103,8 +105,8 @@ async function start() {
 
             // If right answers are exist choose random answer
             if (!rightAnswers.length) {
-                const rnd = Math.floor(Math.random() * answers.length)
-                rightAnswers = [rnd ? rnd : 1]
+                const randomAnswer = Math.floor(Math.random() * answers.length)
+                rightAnswers = [randomAnswer ? randomAnswer : 1]
             }
 
             // Actions on webpage to pass the test
@@ -121,9 +123,8 @@ async function start() {
             console.log(`${chalk.white([currentQuestion])}, Right answers: ${chalk.blue(rightAnswers)}`)
         }
 
-        // Check current question and compare
-        // If true call function again
-        setInterval(async () => {
+        // Listen current question and compare
+        const listenCurrentQuestion = async () => {
             await driver.findElement(By.className('currentActiveQuestion')).getText()
                 .then(async data => {
                     const number = Number(data)
@@ -132,11 +133,17 @@ async function start() {
                     currentQuestion = number
                     await passingOfTest()
                 })
+        }
+
+        // Launch function every 3s to check the question
+        setInterval(async () => {
+            await listenCurrentQuestion()
         }, 3000)
 
     } catch (err) {
         errorPrint(err)
     } finally {
+        // To not quit the program after result
         setTimeout(async () => {
             await driver.quit()
         }, 1000000)
