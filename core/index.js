@@ -1,29 +1,12 @@
 import {Builder, Browser, By, Key, until} from 'selenium-webdriver'
 import {Configuration, OpenAIApi} from 'openai'
 import {Options} from 'selenium-webdriver/firefox.js'
+import randomUserAgent from "random-useragent"
 import promptSync from 'prompt-sync'
 import chalk from 'chalk'
 import dotenv from 'dotenv'
-dotenv.config()
 
-const desktopAgents = [
-    'Mozilla/5.0 (Windows NT 10.0; rv:78.0) Gecko/20100101 Firefox/78.0',
-    'Mozilla/5.0 (Android 10; Mobile; rv:91.0) Gecko/91.0 Firefox/91.0',
-    'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.99 Safari/537.36',
-    'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.99 Safari/537.36',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ',
-    'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.99 Safari/537.36',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_1) ',
-    'AppleWebKit/602.2.14 (KHTML, like Gecko) Version/10.0.1 Safari/602.2.14',
-    'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_1) ',
-    'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.98 Safari/537.36',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) ',
-    'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.98 Safari/537.36',
-    'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36',
-    'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.99 Safari/537.36',
-    'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:50.0) Gecko/20100101 Firefox/50.0'
-]
+dotenv.config()
 
 // Cool error print
 const errorPrint = err => console.error(chalk.red(err))
@@ -35,7 +18,6 @@ const code = prompt('Enter code: ')
 async function start() {
     const socks = [9050, 9052, 9053, 9054]
     const randomSock = socks[Math.floor(Math.random() * socks.length)]
-    const randomDesktopAgent = desktopAgents[Math.floor(Math.random() * socks.length)]
 
     let options = new Options()
 
@@ -46,8 +28,8 @@ async function start() {
     options.setPreference('network.proxy.socks_remote_dns', true)
     options.setPreference('network.proxy.socks_version', 5)
 
-    // Desktop agent
-    options.setPreference('general.useragent.override', randomDesktopAgent)
+    // Random User-Agent
+    options.setPreference('general.useragent.override', randomUserAgent.getRandom())
 
     let driver = await new Builder()
         .forBrowser(Browser.FIREFOX)
@@ -58,7 +40,7 @@ async function start() {
         const urlOfRegistration = 'https://naurok.com.ua/test/join'
 
         // Join test
-        await driver.get('https://www.whatismybrowser.com/detect/what-is-my-user-agent/')
+        await driver.get(urlOfRegistration)
         await driver.findElement(By.id('joinform-name')).sendKeys(username, Key.ENTER)
         await driver.findElement(By.id('joinform-gamecode')).sendKeys(code, Key.ENTER)
         await driver.findElement(By.className('join-button-test')).click()
@@ -67,7 +49,6 @@ async function start() {
 
         await passingOfTest()
 
-        // Passing of test
         async function passingOfTest() {
             // Get question and answers
             const question = await driver.wait(until.elementLocated(By.css('.test-content-text-inner p'))).getText()
@@ -96,7 +77,6 @@ async function start() {
                 isMultiQuiz = await driver.findElement(By.css('.test-multiquiz-save-line span')).isDisplayed()
             } catch (err) {
                 isMultiQuiz = false
-                // errorPrint(err)
             }
 
             // Templates for ChatGPT
