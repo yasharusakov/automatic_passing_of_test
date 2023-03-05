@@ -3,7 +3,6 @@ import {Configuration, OpenAIApi} from 'openai'
 import promptSync from 'prompt-sync'
 import chalk from "chalk"
 import dotenv from 'dotenv'
-
 dotenv.config()
 
 // Cool error print
@@ -14,7 +13,12 @@ const username = prompt('Enter username: ')
 const code = prompt('Enter code: ')
 
 async function start() {
-    let driver = await new Builder().forBrowser(Browser.FIREFOX).build()
+
+    let driver = await new Builder()
+        .forBrowser(Browser.FIREFOX)
+        .build()
+
+    await driver.get('https://gs.statcounter.com/detect')
 
     try {
         const urlOfRegistration = 'https://naurok.com.ua/test/join'
@@ -74,7 +78,14 @@ async function start() {
 
             // Some actions on webpage
             await Promise.all(rightAnswers.map(async rightAnswer => {
-                await elements[Number(rightAnswer) - 1].click()
+                try {
+                    await elements[Number(rightAnswer) - 1].click()
+                } catch (err) {
+                    const randomNumber = Math.floor(Math.random() * answers.length)
+                    await elements[randomNumber].click()
+                    console.log(80)
+                    errorPrint(err)
+                }
             }))
                 .then(async () => {
                     if (isMultiQuiz) {
