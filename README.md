@@ -14,6 +14,10 @@
 * API_KEY=`YOUR API KEY`
   * Your api key you can find there https://platform.openai.com/account/api-keys
 
+#### To start app input `npm start` in terminal
+
+# Tor network
+
 ### Download Tor network
 * Arch/Manjaro
   - `$ sudo pacman -S tor`
@@ -30,8 +34,5 @@ SocksPort 9053
 SocksPort 9054
 ```
 
-#### To start app input `npm start` in terminal
-
-# Tor network
 #### In terminal input `sudo tor`
 #### To start app with tor network input `npm run tor` in terminal
