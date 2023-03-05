@@ -89,19 +89,27 @@ async function start() {
             const data = await runPrompt(isMultiQuiz ? templateMany : templateOne)
                 .catch(errorPrint)
 
-            const rightAnswers = data.split(',,,').map(item => item.replace(/\D/g, '')[0])
+            let rightAnswers = data.split(',,,')
+                .map(item => {
+                    const number = Number(item.replace(/\D/g, '')[0])
 
-            // Some actions on webpage
+                    if (number && number <= answers.length) {
+                        return number
+                    }
+
+                    errorPrint(`${chalk.yellow(number)} ${chalk.white('not found')} in ${JSON.stringify(answers, null, 3)}`)
+                })
+                .filter(item => item)
+
+            // If right answers are exist choose random answer
+            if (!rightAnswers.length) {
+                const rnd = Math.floor(Math.random() * answers.length)
+                rightAnswers = [rnd ? rnd : 1]
+            }
+
+            // Actions on webpage to pass the test
             await Promise.all(rightAnswers.map(async rightAnswer => {
-                try {
-                    await elements[Number(rightAnswer) - 1].click()
-                } catch (err) {
-                    // Choose random button if response from ChatGPT was wrong
-                    console.log(chalk.red('Response was wrong from ChatGPT'))
-                    const randomNumber = Math.floor(Math.random() * answers.length)
-                    console.log(`Random button is ${chalk.blue(randomNumber)}`)
-                    await elements[randomNumber].click()
-                }
+                await elements[Number(rightAnswer) - 1].click()
             }))
                 .then(async () => {
                     if (isMultiQuiz) {
