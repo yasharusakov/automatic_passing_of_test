@@ -30,5 +30,8 @@ SocksPort 9053
 SocksPort 9054
 ```
 
-#### In terminal input sudo tor
 #### To start app input `npm start` in terminal
+
+# Tor network
+#### In terminal input `sudo tor`
+#### To start app with tor network input `npm run tor` in terminal

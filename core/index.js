@@ -1,11 +1,10 @@
 import {Builder, Browser, By, Key, until} from 'selenium-webdriver'
-import {Configuration, OpenAIApi} from 'openai'
 import {Options} from 'selenium-webdriver/firefox.js'
 import randomUserAgent from "random-useragent"
 import promptSync from 'prompt-sync'
 import chalk from 'chalk'
+import {runPrompt} from "./chatgpt.js"
 import dotenv from 'dotenv'
-
 dotenv.config()
 
 // Cool error print
@@ -22,11 +21,13 @@ async function start() {
     let options = new Options()
 
     // Connection via Tor
-    options.setPreference('network.proxy.type', 1)
-    options.setPreference('network.proxy.socks', '127.0.0.1')
-    options.setPreference('network.proxy.socks_port', randomSock)
-    options.setPreference('network.proxy.socks_remote_dns', true)
-    options.setPreference('network.proxy.socks_version', 5)
+    if (process.env.TOR && process.env.TOR.includes('enable')) {
+        options.setPreference('network.proxy.type', 1)
+        options.setPreference('network.proxy.socks', '127.0.0.1')
+        options.setPreference('network.proxy.socks_port', randomSock)
+        options.setPreference('network.proxy.socks_remote_dns', true)
+        options.setPreference('network.proxy.socks_version', 5)
+    }
 
     // Random User-Agent
     options.setPreference('general.useragent.override', randomUserAgent.getRandom())
@@ -95,10 +96,11 @@ async function start() {
                 try {
                     await elements[Number(rightAnswer) - 1].click()
                 } catch (err) {
+                    // Choose random button if response from ChatGPT was wrong
+                    console.log(chalk.red('Response was wrong from ChatGPT'))
                     const randomNumber = Math.floor(Math.random() * answers.length)
+                    console.log(`Random button is ${chalk.blue(randomNumber)}`)
                     await elements[randomNumber].click()
-                    console.log(80)
-                    errorPrint(err)
                 }
             }))
                 .then(async () => {
@@ -131,23 +133,6 @@ async function start() {
             await driver.quit()
         }, 1000000)
     }
-}
-
-const config = new Configuration({
-    apiKey: process.env.API_KEY
-})
-
-const openai = new OpenAIApi(config)
-
-const runPrompt = async (prompt) => {
-    const response = await openai.createCompletion({
-        model: 'text-davinci-003',
-        prompt: prompt,
-        max_tokens: 2048,
-        temperature: 1
-    })
-
-    return response.data.choices[0].text
 }
 
 start()
