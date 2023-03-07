@@ -8,7 +8,7 @@ const config = new Configuration({
 
 const openai = new OpenAIApi(config)
 
-export const runPrompt = async (prompt) => {
+export const chatGPT = async (prompt) => {
     const response = await openai.createCompletion({
         model: 'text-davinci-003',
         prompt: prompt,

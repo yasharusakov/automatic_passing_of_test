@@ -2,20 +2,22 @@ import {Builder, Browser, By, Key, until} from 'selenium-webdriver'
 import {Options} from 'selenium-webdriver/firefox.js'
 import randomUserAgent from "random-useragent"
 import promptSync from 'prompt-sync'
+import {chatGPT} from "./chatgpt.js"
 import chalk from 'chalk'
-import {runPrompt} from "./chatgpt.js"
 import dotenv from 'dotenv'
 dotenv.config()
 
-// Cool error print
-const errorPrint = err => console.error(chalk.red(err))
-
-// Data to join test
 const prompt = promptSync()
 const username = prompt('Enter username: ')
 const code = prompt('Enter code: ')
 
-async function start() {
+const errorPrint = (err) => {
+    console.error(chalk.red(err))
+}
+
+const urlOfRegistration = 'https://naurok.com.ua/test/join'
+
+const start = async () => {
     const socks = [9050, 9052, 9053, 9054]
     const randomSock = socks[Math.floor(Math.random() * socks.length)]
 
@@ -33,15 +35,12 @@ async function start() {
     // Random User-Agent
     options.setPreference('general.useragent.override', randomUserAgent.getRandom())
 
-    // Launch driver
-    let driver = await new Builder()
+    const driver = await new Builder()
         .forBrowser(Browser.FIREFOX)
         .withCapabilities(options)
         .build()
 
     try {
-        const urlOfRegistration = 'https://naurok.com.ua/test/join'
-
         // Join test
         await driver.get(urlOfRegistration)
         await driver.findElement(By.id('joinform-name')).sendKeys(username, Key.ENTER)
@@ -69,7 +68,7 @@ async function start() {
                             answer += `${value} `
                         })
                 }))
-                answers.push(`${i + 1}) ${answer},,, `)
+                answers.push(`${i + 1}) ${answer} ,`)
             }))
                 .catch(errorPrint)
 
@@ -88,18 +87,16 @@ async function start() {
 
             // Send request to ChatGPT and get response
             console.log(chalk.blue('Waiting for response from ChatGPT...'))
-            const data = await runPrompt(isMultiQuiz ? templateMany : templateOne)
+            const data = await chatGPT(isMultiQuiz ? templateMany : templateOne)
                 .catch(errorPrint)
 
-            let rightAnswers = data.split(',,,')
+            let rightAnswers = data.split(',')
                 .map(item => {
                     const number = Number(item.replace(/\D/g, '')[0])
 
                     if (number && number <= answers.length) {
                         return number
                     }
-
-                    errorPrint(`${chalk.yellow(number)} ${chalk.white('not found')} in ${JSON.stringify(answers, null, 3)}`)
                 })
                 .filter(item => item)
 
@@ -120,7 +117,7 @@ async function start() {
                 })
                 .catch(errorPrint)
 
-            console.log(`${chalk.white([currentQuestion])}, Right answers: ${chalk.blue(rightAnswers)}`)
+            console.log(`${chalk.white(currentQuestion)}, Right answers: [${chalk.blue(rightAnswers)}]`)
         }
 
         // Listen current question and compare
@@ -135,7 +132,6 @@ async function start() {
                 })
         }
 
-        // Launch function every 3s to check the question
         setInterval(async () => {
             await listenCurrentQuestion()
         }, 3000)
@@ -143,7 +139,6 @@ async function start() {
     } catch (err) {
         errorPrint(err)
     } finally {
-        // To not quit the program after result
         setTimeout(async () => {
             await driver.quit()
         }, 1000000)
