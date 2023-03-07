@@ -53,24 +53,30 @@ const start = async () => {
 
         async function passingOfTest() {
             // Get question and answers
-            const question = await driver.wait(until.elementLocated(By.css('.test-content-text-inner p'))).getText()
-            const elements = await driver.wait(until.elementsLocated(By.className('question-option-inner-content')))
-            const answers = []
+            const [{value: question}, {value: elements}] = await Promise.allSettled([
+                await driver.wait(until.elementLocated(By.css('.test-content-text-inner p'))).getText(),
+                await driver.wait(until.elementsLocated(By.className('question-option-inner-content')))
+            ])
 
-            await Promise.all(elements.map(async (element, i) => {
+            console.log(chalk.bgGreen(chalk.white(`ㅤ${currentQuestion}. ${question}ㅤ`)))
+
+            const answers = await Promise.allSettled(elements.map(async (element, i) => {
                 const paragraphs = await element.findElements(By.css('p'))
+                    .catch(errorPrint)
 
-                let answer = ''
-
-                await Promise.all(paragraphs.map(async paragraph => {
-                    await paragraph.getText()
-                        .then(value => {
-                            answer += `${value} `
-                        })
+                const answer = await Promise.allSettled(paragraphs.map(async paragraph => {
+                    return await paragraph.getText()
                 }))
-                answers.push(`${i + 1}) ${answer} ,`)
+                    .then(paragraphs => paragraphs.map(parapraph => parapraph.value).join(' '))
+                    .catch(errorPrint)
+
+                return `(${i + 1}) : ${answer}, `
             }))
+                .then(answers => answers.map(answer => answer.value))
                 .catch(errorPrint)
+
+            const formattedAnswers = JSON.stringify(answers, null, 3)
+            console.log(chalk.blue(formattedAnswers))
 
             // Check if question has more than one answer to choose
             let isMultiQuiz
@@ -82,11 +88,11 @@ const start = async () => {
             }
 
             // Templates for ChatGPT
-            const templateOne = `Обери одну правильну відповіть цифрою на це запитання "${question}". Варіанти відповідей на запитання: ${answers}`
-            const templateMany = `Обери тільки правильні відповіді цифрами на це запитання "${question}". Варіанти відповідей на запитання: ${answers}`
+            const templateOne = `Вкажи правильну відповідь тільки цифрою. Question: ${question}. Answers: ${formattedAnswers}`
+            const templateMany = `Вкажи правильні відповіді тільки цифрами. Question: ${question}. Answers: ${formattedAnswers}`
 
             // Send request to ChatGPT and get response
-            console.log(chalk.blue('Waiting for response from ChatGPT...'))
+            console.log(chalk.magenta('Waiting for response from ChatGPT...'))
             const data = await chatGPT(isMultiQuiz ? templateMany : templateOne)
                 .catch(errorPrint)
 
@@ -102,12 +108,13 @@ const start = async () => {
 
             // If right answers are exist choose random answer
             if (!rightAnswers.length) {
+                console.log(chalk.yellow('Был выбран рандомный ответ'))
                 const randomAnswer = Math.floor(Math.random() * answers.length)
                 rightAnswers = [randomAnswer ? randomAnswer : 1]
             }
 
             // Actions on webpage to pass the test
-            await Promise.all(rightAnswers.map(async rightAnswer => {
+            await Promise.allSettled(rightAnswers.map(async rightAnswer => {
                 await elements[Number(rightAnswer) - 1].click()
             }))
                 .then(async () => {
@@ -117,7 +124,7 @@ const start = async () => {
                 })
                 .catch(errorPrint)
 
-            console.log(`${chalk.white(currentQuestion)}, Right answers: [${chalk.blue(rightAnswers)}]`)
+            console.log(chalk.white('Right answers:'), chalk.yellow(rightAnswers))
         }
 
         // Listen current question and compare
