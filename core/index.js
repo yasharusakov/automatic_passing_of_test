@@ -1,21 +1,41 @@
 import {Builder, Browser, By, Key, until} from 'selenium-webdriver'
 import {Options} from 'selenium-webdriver/firefox.js'
+import {passingOfTestUsingAI} from "./modules/passingOfTestUsingAI.js"
+import {passingOfTestUsingSource} from "./modules/passingOfTestUsingSource.js"
 import randomUserAgent from "random-useragent"
 import promptSync from 'prompt-sync'
-import {chatGPT} from "./chatgpt.js"
 import chalk from 'chalk'
-import dotenv from 'dotenv'
-dotenv.config()
 
-const prompt = promptSync()
-const username = prompt('Enter username: ')
-const code = prompt('Enter code: ')
-
-const errorPrint = (err) => {
+export const errorPrint = (err) => {
     console.error(chalk.red(err))
 }
 
+const prompt = promptSync()
+const username = prompt(chalk.magenta.bold('Enter username: '))
+const code = prompt(chalk.magenta.bold('Enter code: '))
+
+console.log(`
+${chalk.white.bold('Methods to pass the test:')}
+${chalk.yellow('1.')} ${chalk.blue('Using ChatGPT - Artificial Intelligence, you trust only AI')}
+${chalk.yellow('2.')} ${chalk.blue('Source answers')}
+`)
+
+const method = prompt(chalk.magenta.bold('Enter number of method to pass the test: '))
+const urlOfAnswers = method.includes(2) ? prompt(chalk.magenta.bold('Enter url of answers: ')) : 1
+
 const urlOfRegistration = 'https://naurok.com.ua/test/join'
+
+export const checkMultiQuiz = async (driver) => {
+    let isMultiQuiz
+
+    try {
+        isMultiQuiz = await driver.findElement(By.css('.test-multiquiz-save-line span')).isDisplayed()
+    } catch (err) {
+        isMultiQuiz = false
+    }
+
+    return isMultiQuiz
+}
 
 const start = async () => {
     const socks = [9050, 9052, 9053, 9054]
@@ -41,6 +61,37 @@ const start = async () => {
         .build()
 
     try {
+        let sourceData
+
+        if (method.includes(2)) {
+            await driver.get(urlOfAnswers)
+
+            const sourceElements = await driver.wait(until.elementsLocated(By.css('.homework-stats .content-block')))
+
+            sourceData = await Promise.allSettled(sourceElements.map(async (item, i) => {
+                const question = await item.findElement(By.css('.homework-stat-question-line p')).getText()
+                const answers = await item.findElements(By.css('.homework-stat-question-line .homework-stat-options .homework-stat-option-line .correct p'))
+                    .then(async answers => {
+                        return await Promise.allSettled(answers.map(async answer => {
+                            return await answer.getText()
+                                .then(data => data.trim())
+                        }))
+                    })
+
+                return [question.trim(), answers.map(item => item.value)]
+            }))
+                .then(data => {
+                    const object = {}
+
+                    data.forEach(item => {
+                        const el = item.value
+                        object[el[0]] = el[1]
+                    })
+
+                    return object
+                })
+        }
+
         // Join test
         await driver.get(urlOfRegistration)
         await driver.findElement(By.id('joinform-name')).sendKeys(username, Key.ENTER)
@@ -49,83 +100,15 @@ const start = async () => {
 
         let currentQuestion = 1
 
-        await passingOfTest()
-
-        async function passingOfTest() {
-            // Get question and answers
-            const [{value: question}, {value: elements}] = await Promise.allSettled([
-                await driver.wait(until.elementLocated(By.css('.test-content-text-inner p'))).getText(),
-                await driver.wait(until.elementsLocated(By.className('question-option-inner-content')))
-            ])
-
-            console.log(chalk.bgGreen(chalk.white(`ㅤ${currentQuestion}. ${question}ㅤ`)))
-
-            const answers = await Promise.allSettled(elements.map(async (element, i) => {
-                const paragraphs = await element.findElements(By.css('p'))
-                    .catch(errorPrint)
-
-                const answer = await Promise.allSettled(paragraphs.map(async paragraph => {
-                    return await paragraph.getText()
-                }))
-                    .then(paragraphs => paragraphs.map(parapraph => parapraph.value).join(' '))
-                    .catch(errorPrint)
-
-                return `(${i + 1}) : ${answer}, `
-            }))
-                .then(answers => answers.map(answer => answer.value))
-                .catch(errorPrint)
-
-            const formattedAnswers = JSON.stringify(answers, null, 3)
-            console.log(chalk.blue(formattedAnswers))
-
-            // Check if question has more than one answer to choose
-            let isMultiQuiz
-
-            try {
-                isMultiQuiz = await driver.findElement(By.css('.test-multiquiz-save-line span')).isDisplayed()
-            } catch (err) {
-                isMultiQuiz = false
+        const passingOfTest = async () => {
+            if (method.includes(2)) {
+                await passingOfTestUsingSource(driver, sourceData)
+            } else {
+                await passingOfTestUsingAI(driver, currentQuestion)
             }
-
-            // Templates for ChatGPT
-            const templateOne = `Вкажи правильну відповідь тільки цифрою. Question: ${question}. Answers: ${formattedAnswers}`
-            const templateMany = `Вкажи правильні відповіді тільки цифрами. Question: ${question}. Answers: ${formattedAnswers}`
-
-            // Send request to ChatGPT and get response
-            console.log(chalk.magenta('Waiting for response from ChatGPT...'))
-            const data = await chatGPT(isMultiQuiz ? templateMany : templateOne)
-                .catch(errorPrint)
-
-            let rightAnswers = data.split(',')
-                .map(item => {
-                    const number = Number(item.replace(/\D/g, '')[0])
-
-                    if (number && number <= answers.length) {
-                        return number
-                    }
-                })
-                .filter(item => item)
-
-            // If right answers are exist choose random answer
-            if (!rightAnswers.length) {
-                console.log(chalk.yellow('Был выбран рандомный ответ'))
-                const randomAnswer = Math.floor(Math.random() * answers.length)
-                rightAnswers = [randomAnswer ? randomAnswer : 1]
-            }
-
-            // Actions on webpage to pass the test
-            await Promise.allSettled(rightAnswers.map(async rightAnswer => {
-                await elements[Number(rightAnswer) - 1].click()
-            }))
-                .then(async () => {
-                    if (isMultiQuiz) {
-                        await driver.findElement(By.className('test-multiquiz-save-button')).click()
-                    }
-                })
-                .catch(errorPrint)
-
-            console.log(chalk.white('Right answers:'), chalk.yellow(rightAnswers))
         }
+
+        await passingOfTest()
 
         // Listen current question and compare
         const listenCurrentQuestion = async () => {
