@@ -2,17 +2,16 @@
   "name": "automatic_passing_of_test",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "core/index.js",
   "scripts": {
     "start": "node core/index.js",
     "tor": "cross-env TOR=enable node core/index.js"
   },
-  "keywords": [],
   "type": "module",
+  "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "chalk": "^5.2.0",
     "cross-env": "^7.0.3",
     "dotenv": "^16.0.3",
     "openai": "^3.2.1",
