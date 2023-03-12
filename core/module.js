@@ -25,7 +25,6 @@ const chatGPT = async (prompt) => {
     return response.data.choices[0].text
 }
 
-
 // PassingOfTest {
 const checkMultiQuiz = async driver => {
     return await driver.findElement(By.css('.test-multiquiz-save-line span')).isDisplayed()

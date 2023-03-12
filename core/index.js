@@ -1,5 +1,5 @@
 import {Builder, By, until, Key, Browser} from 'selenium-webdriver'
-import {Options} from "selenium-webdriver/firefox.js"
+import {Options} from 'selenium-webdriver/firefox.js'
 import {getRandom as createRandomUserAgent} from 'random-useragent'
 import promptSync from 'prompt-sync'
 import dotenv from 'dotenv'
