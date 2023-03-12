@@ -1,11 +1,11 @@
 import {Builder, By, until, Key, Browser} from 'selenium-webdriver'
 import {Options} from "selenium-webdriver/firefox.js"
-import {getRandom} from 'random-useragent'
+import {getRandom as createRandomUserAgent} from 'random-useragent'
 import promptSync from 'prompt-sync'
 import dotenv from 'dotenv'
 dotenv.config()
 
-import {passingOfTestUsingAI, passingOfTestUsingSource} from "module.js"
+import {passingOfTestUsingAI, passingOfTestUsingSource, errorPrint} from "./module.js"
 
 const prompt = promptSync()
 const username = prompt('Enter username: ')
@@ -22,7 +22,8 @@ const urlOfAnswers = method === '2' && prompt('Enter url of answers: ')
 
 const urlOfRegistration = 'https://naurok.com.ua/test/join'
 
-const start = async () => {
+// Входная точка программы
+const main = async () => {
     const socks = [9050, 9052, 9053, 9054]
     const randomSock = socks[Math.floor(Math.random() * socks.length)]
 
@@ -38,7 +39,7 @@ const start = async () => {
     }
 
     // Random User-Agent
-    options.setPreference('general.useragent.override', getRandom())
+    options.setPreference('general.useragent.override', createRandomUserAgent())
 
     const driver = await new Builder()
         .forBrowser(Browser.FIREFOX)
@@ -126,4 +127,4 @@ const start = async () => {
     }
 }
 
-start()
+main()

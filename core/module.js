@@ -1,14 +1,20 @@
 import {Configuration, OpenAIApi} from 'openai'
 import {By, until} from 'selenium-webdriver'
 
-// ChatGPT {
-const config = new Configuration({
-    apiKey: process.env.API_KEY
-})
-
-const openai = new OpenAIApi(config)
+/*
+    [function] chatGPT
+    [function] checkMultiQuiz
+    [function] getQuestionAndAnswers
+    [function] passingOfTestUsingAI
+    [function] passingOfTestUsingSource
+    [function] errorPrint
+*/
 
 const chatGPT = async (prompt) => {
+    const openai = new OpenAIApi(new Configuration({
+        apiKey: process.env.API_KEY
+    }))
+
     const response = await openai.createCompletion({
         model: 'text-davinci-003',
         prompt: prompt,
@@ -18,7 +24,7 @@ const chatGPT = async (prompt) => {
 
     return response.data.choices[0].text
 }
-// ChatGPT }
+
 
 // PassingOfTest {
 const checkMultiQuiz = async driver => {
@@ -49,7 +55,7 @@ const getQuestionAndAnswers = async (driver, condition) => {
     return [question.trim(), answers, elements]
 }
 
-async function passingOfTestUsingAI(driver) {
+export async function passingOfTestUsingAI(driver) {
     const [question, answers, elements] = await getQuestionAndAnswers(driver, false)
     const formattedAnswers = JSON.stringify(answers, null, 3)
     const isMultiQuiz = await checkMultiQuiz(driver)
@@ -83,7 +89,7 @@ async function passingOfTestUsingAI(driver) {
         .catch(errorPrint)
 }
 
-const passingOfTestUsingSource = async (driver, sourceData) => {
+export const passingOfTestUsingSource = async (driver, sourceData) => {
     const [question, answers, elements] = await getQuestionAndAnswers(driver, true)
 
     const isMultiQuiz = await checkMultiQuiz(driver)
@@ -101,3 +107,5 @@ const passingOfTestUsingSource = async (driver, sourceData) => {
         .catch(errorPrint)
 }
 // PassingOfTest }
+
+export const errorPrint = err => console.error(err)
