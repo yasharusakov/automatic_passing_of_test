@@ -2,23 +2,31 @@ import {Configuration, OpenAIApi} from 'openai'
 import {Browser, Builder, By, until, Key} from 'selenium-webdriver'
 import {getRandom as createRandomUserAgent} from 'random-useragent'
 import {Options} from 'selenium-webdriver/firefox.js'
+import promptSync from 'prompt-sync'
+import dotenv from 'dotenv'
+
+dotenv.config()
 
 /*
-    [class] ChatGPT
-       - [function] askGPT
-    [class] PassingOfTest extends ChatGPT
-       - [function] createDriver
-       - [function] joinTest
-       - [function] getSourceAnswers
-       - [function] checkMultiQuiz
-       - [function] getQuestionAndAnswers
-       - [function] passingOfTestUsingAI
-       - [function] passingOfTestUsingSource
-       - [function] passingOfTest
-       - [function] listenCurrentQuestion
-       - [function] driverQuit
     [function] errorPrint
+    [class] ChatGPT
+       - [method] askGPT
+    [class] PreparingTest
+       - [method] printInformation
+       - [method] createDriver
+       - [method] getSourceAnswers
+       - [method] joinTest
+       - [method] driverQuit
+    [class] PassingOfTest extends ChatGPT
+       - [method] checkMultiQuiz
+       - [method] getQuestionAndAnswers
+       - [method] passingOfTestUsingAI
+       - [method] passingOfTestUsingSource
+       - [method] chooseMethodOfPassing
+       - [method] listenCurrentQuestion
 */
+
+export const errorPrint = err => console.error(err)
 
 export class ChatGPT {
     constructor() {
@@ -39,16 +47,27 @@ export class ChatGPT {
     }
 }
 
-export class PassingOfTest extends ChatGPT {
-    constructor(method) {
-        super(method)
+export class PreparingTest extends ChatGPT {
+    constructor(props) {
+        super(props)
+        this.prompt = promptSync()
+        this.username = this.prompt('Enter username: ')
+        this.code = this.prompt('Enter code: ')
+        this.#printInformation()
+        this.method = this.prompt('Enter number of method: ')
+        this.urlOfAnswers = this.method === '2' && this.prompt('Enter url of answers: ')
         this.driver = this.createDriver()
-        this.sourceData = null
-        this.currentQuestion = 1
-        this.method = method
+        this.urlOfRegistration = 'https://naurok.com.ua/test/join'
     }
 
-    // Sync
+    #printInformation = () => {
+        console.log(`
+            Methods:
+            1) Using ChatGPT - Artificial Intelligence, you trust only AI
+            2) Source answers
+        `)
+    }
+
     createDriver = () => {
         const socks = [9050, 9052, 9053, 9054]
         const randomSock = socks[Math.floor(Math.random() * socks.length)]
@@ -75,15 +94,10 @@ export class PassingOfTest extends ChatGPT {
         return driver
     }
 
-    joinTest = async (username, code, urlOfRegistration) => {
-        await this.driver.get(urlOfRegistration)
-        await this.driver.findElement(By.id('joinform-name')).sendKeys(username, Key.ENTER)
-        await this.driver.findElement(By.id('joinform-gamecode')).sendKeys(code, Key.ENTER)
-        await this.driver.findElement(By.className('join-button-test')).click()
-    }
+    getSourceAnswers = async () => {
+        if (this.method !== '2') return
 
-    getSourceAnswers = async (urlOfAnswers) => {
-        await this.driver.get(urlOfAnswers)
+        await this.driver.get(this.urlOfAnswers)
 
         const sourceElements = await this.driver.wait(until.elementsLocated(By.css('.homework-stats .content-block')))
 
@@ -115,13 +129,34 @@ export class PassingOfTest extends ChatGPT {
             })
     }
 
-    checkMultiQuiz = async () => {
+    joinTest = async () => {
+        await this.driver.get(this.urlOfRegistration)
+        await this.driver.findElement(By.id('joinform-name')).sendKeys(this.username, Key.ENTER)
+        await this.driver.findElement(By.id('joinform-gamecode')).sendKeys(this.code, Key.ENTER)
+        await this.driver.findElement(By.className('join-button-test')).click()
+    }
+
+    driverQuit = async () => {
+        setTimeout(async () => {
+            await this.driver.quit()
+        }, 1000000)
+    }
+}
+
+export class PassingOfTest extends PreparingTest {
+    constructor(props) {
+        super(props)
+        this.currentQuestion = 1
+        this.sourceData = null
+    }
+
+    #checkMultiQuiz = async () => {
         return await this.driver.findElement(By.css('.test-multiquiz-save-line span')).isDisplayed()
             .then(() => true)
             .catch(() => false)
     }
 
-    getQuestionAndAnswers = async (condition) => {
+    #getQuestionAndAnswers = async (condition) => {
         const [{value: question}, {value: elements}] = await Promise.allSettled([
             this.driver.wait(until.elementLocated(By.css('.test-content-text-inner p'))).getText(),
             this.driver.wait(until.elementsLocated(By.className('question-option-inner-content')))
@@ -143,10 +178,10 @@ export class PassingOfTest extends ChatGPT {
         return [question.trim(), answers, elements]
     }
 
-    passingOfTestUsingAI = async () => {
-        const [question, answers, elements] = await this.getQuestionAndAnswers(false)
+    #usingAI = async () => {
+        const [question, answers, elements] = await this.#getQuestionAndAnswers(false)
         const formattedAnswers = JSON.stringify(answers, null, 3)
-        const isMultiQuiz = await this.checkMultiQuiz()
+        const isMultiQuiz = await this.#checkMultiQuiz()
 
         // Templates for ChatGPT
         const templateOne = `Вкажи правильну відповідь тільки цифрою. Question: ${question}. Answers: ${formattedAnswers}`
@@ -177,9 +212,9 @@ export class PassingOfTest extends ChatGPT {
             .catch(errorPrint)
     }
 
-    passingOfTestUsingSource = async () => {
-        const [question, answers, elements] = await this.getQuestionAndAnswers(true)
-        const isMultiQuiz = await this.checkMultiQuiz()
+    #usingSource = async () => {
+        const [question, answers, elements] = await this.#getQuestionAndAnswers(true)
+        const isMultiQuiz = await this.#checkMultiQuiz()
 
         await Promise.allSettled(answers.map(async (item, i) => {
             if (this.sourceData[question].includes(item)) {
@@ -194,31 +229,26 @@ export class PassingOfTest extends ChatGPT {
             .catch(errorPrint)
     }
 
-    passingOfTest = async () => {
+    chooseMethodOfPassing = async () => {
         if (this.method === '2') {
-            await this.passingOfTestUsingSource()
+            await this.#usingSource()
         } else {
-            await this.passingOfTestUsingAI()
+            await this.#usingAI()
         }
     }
 
     listenCurrentQuestion = async () => {
-        await this.driver.findElement(By.className('currentActiveQuestion')).getText()
-            .then(async data => {
-                const number = Number(data)
-                if (number === this.currentQuestion) return
+        const launch = async () => {
+            await this.driver.findElement(By.className('currentActiveQuestion')).getText()
+                .then(async data => {
+                    const number = Number(data)
+                    if (number === this.currentQuestion) return
 
-                this.currentQuestion = number
-                await this.passingOfTest()
-            })
-    }
+                    this.currentQuestion = number
+                    await this.chooseMethodOfPassing()
+                })
+        }
 
-    driverQuit = async () => {
-        setTimeout(async () => {
-            await this.driver.quit()
-        }, 1000000)
+        setInterval(launch, 2500)
     }
 }
-
-
-export const errorPrint = err => console.error(err)
