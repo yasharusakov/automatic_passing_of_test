@@ -4,19 +4,22 @@ import {errorPrint} from '../index.js'
 import {ChatGPTService} from './chatgpt-service.js'
 
 export class PassingOfTest extends PreparingTest {
+    #chatgpt
+    #currentQuestion
+
     constructor() {
         super()
-        this.chatgpt = new ChatGPTService()
-        this.currentQuestion = 1
+        this.#chatgpt = new ChatGPTService()
+        this.#currentQuestion = 1
     }
 
-    checkMultiQuiz = async () => {
+    #checkMultiQuiz = async () => {
         return await this.driver.findElement(By.css('.test-multiquiz-save-line span')).isDisplayed()
             .then(() => true)
             .catch(() => false)
     }
 
-    getQuestionAndAnswers = async (condition) => {
+    #getQuestionAndAnswers = async (condition) => {
         const [{value: question}, {value: elements}] = await Promise.allSettled([
             this.driver.wait(until.elementLocated(By.css('.test-content-text-inner p'))).getText(),
             this.driver.wait(until.elementsLocated(By.className('question-option-inner-content')))
@@ -38,17 +41,17 @@ export class PassingOfTest extends PreparingTest {
         return [question.trim(), answers, elements]
     }
 
-    usingAI = async () => {
-        const [question, answers, elements] = await this.getQuestionAndAnswers(false)
+    #usingAI = async () => {
+        const [question, answers, elements] = await this.#getQuestionAndAnswers(false)
         const formattedAnswers = JSON.stringify(answers, null, 3)
-        const isMultiQuiz = await this.checkMultiQuiz()
+        const isMultiQuiz = await this.#checkMultiQuiz()
 
         // Templates for ChatGPT
         const templateOne = `Вкажи правильну відповідь тільки цифрою. Question: ${question}. Answers: ${formattedAnswers}`
         const templateMany = `Вкажи правильні відповіді тільки цифрами. Question: ${question}. Answers: ${formattedAnswers}`
 
         // Send request to ChatGPT and get response
-        const data = await this.chatgpt.query(isMultiQuiz ? templateMany : templateOne)
+        const data = await this.#chatgpt.query(isMultiQuiz ? templateMany : templateOne)
             .catch(errorPrint)
 
         let rightAnswers = data.split(',')
@@ -72,9 +75,9 @@ export class PassingOfTest extends PreparingTest {
             .catch(errorPrint)
     }
 
-    usingSource = async () => {
-        const [question, answers, elements] = await this.getQuestionAndAnswers(true)
-        const isMultiQuiz = await this.checkMultiQuiz()
+    #usingSource = async () => {
+        const [question, answers, elements] = await this.#getQuestionAndAnswers(true)
+        const isMultiQuiz = await this.#checkMultiQuiz()
 
         await Promise.allSettled(answers.map(async (item, i) => {
             if (this.sourceData[question].includes(item)) {
@@ -91,9 +94,9 @@ export class PassingOfTest extends PreparingTest {
 
     chooseMethodOfPassing = async () => {
         if (this.method === '2') {
-            await this.usingSource()
+            await this.#usingSource()
         } else {
-            await this.usingAI()
+            await this.#usingAI()
         }
     }
 
@@ -102,9 +105,9 @@ export class PassingOfTest extends PreparingTest {
             await this.driver.findElement(By.className('currentActiveQuestion')).getText()
                 .then(async data => {
                     const number = Number(data)
-                    if (number === this.currentQuestion) return
+                    if (number === this.#currentQuestion) return
 
-                    this.currentQuestion = number
+                    this.#currentQuestion = number
                     await this.chooseMethodOfPassing()
                 })
         }

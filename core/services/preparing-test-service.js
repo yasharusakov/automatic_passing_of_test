@@ -5,18 +5,20 @@ import promptSync from 'prompt-sync'
 import {errorPrint} from '../index.js'
 
 export class PreparingTest {
+    #prompt
+
     constructor() {
-        this.prompt = promptSync()
-        this.username = this.prompt('Enter username: ')
-        this.code = this.prompt('Enter code: ')
-        this.method = this.prompt('Enter number of method: ')
-        this.urlOfAnswers = this.method === '2' && this.prompt('Enter url of answers: ')
-        this.driver = this.createDriver()
+        this.#prompt = promptSync()
+        this.username = this.#prompt('Enter username: ')
+        this.code = this.#prompt('Enter code: ')
+        this.method = this.#prompt('Enter number of method: ')
+        this.urlOfAnswers = this.method === '2' && this.#prompt('Enter url of answers: ')
+        this.driver = this.#createDriver()
         this.urlOfRegistration = 'https://naurok.com.ua/test/join'
         this.sourceData = null
     }
 
-    createDriver = () => {
+    #createDriver = () => {
         const socks = [9050, 9052, 9053, 9054]
         const randomSock = socks[Math.floor(Math.random() * socks.length)]
 
@@ -87,6 +89,6 @@ export class PreparingTest {
     driverQuit = async () => {
         setTimeout(async () => {
             await this.driver.quit()
-        }, 1000000)
+        }, 1000000000)
     }
 }
