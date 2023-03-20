@@ -1,7 +1,8 @@
-import {errorPrint, PassingOfTest} from './module.js'
+import {PassingOfTest} from './services/passing-of-test-service.js'
 
-// Входная точка программы
-const main = async () => {
+export const errorPrint = err => console.error(err)
+
+const start = async () => {
     const {
         joinTest,
         getSourceAnswers,
@@ -22,4 +23,4 @@ const main = async () => {
     }
 }
 
-main()
+start()
