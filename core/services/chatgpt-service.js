@@ -2,7 +2,7 @@ import {Configuration, OpenAIApi} from 'openai'
 import dotenv from 'dotenv'
 dotenv.config()
 
-export class ChatGPTService {
+class ChatGPTService {
     #openai
 
     constructor() {
@@ -22,3 +22,5 @@ export class ChatGPTService {
         return response.data.choices[0].text
     }
 }
+
+export default ChatGPTService;

@@ -1,8 +1,9 @@
-import {PassingOfTest} from './services/passing-of-test-service.js'
+import PassingOfTest from './services/passing-of-test-service.js'
 
-export const errorPrint = err => console.error(err)
+// Я переделал в function declaration, так как возвращало console.log(err), а нужно, что бы оно возвращало void
+export function errorPrint(err) { console.error(err) }
 
-const start = async () => {
+(async function () {
     const {
         joinTest,
         getSourceAnswers,
@@ -21,6 +22,4 @@ const start = async () => {
     } finally {
         await driverQuit()
     }
-}
-
-start()
+})()

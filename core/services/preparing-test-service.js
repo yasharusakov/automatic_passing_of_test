@@ -2,15 +2,21 @@ import {Browser, Builder, By, until, Key} from 'selenium-webdriver'
 import {getRandom as createRandomUserAgent} from 'random-useragent'
 import {Options as FirefoxOptions} from 'selenium-webdriver/firefox.js'
 import promptSync from 'prompt-sync'
+
 import {errorPrint} from '../index.js'
 
-export class PreparingTest {
+class PreparingTest {
     #prompt
 
     constructor() {
         this.#prompt = promptSync()
         this.username = this.#prompt('Enter username: ')
         this.code = this.#prompt('Enter code: ')
+        console.log(`
+        Methods:
+        1) Using ChatGPT - Artificial Intelligence, you trust only AI
+        2) Source answers
+        `)
         this.method = this.#prompt('Enter number of method: ')
         this.urlOfAnswers = this.method === '2' && this.#prompt('Enter url of answers: ')
         this.driver = this.#createDriver()
@@ -92,3 +98,5 @@ export class PreparingTest {
         }, 1000000000)
     }
 }
+
+export default PreparingTest;

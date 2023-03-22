@@ -1,9 +1,10 @@
 import {By, until} from 'selenium-webdriver'
-import {PreparingTest} from './preparing-test-service.js'
-import {errorPrint} from '../index.js'
-import {ChatGPTService} from './chatgpt-service.js'
 
-export class PassingOfTest extends PreparingTest {
+import PreparingTest from './preparing-test-service.js'
+import {errorPrint} from '../index.js'
+import ChatGPTService from './chatgpt-service.js'
+
+class PassingOfTest extends PreparingTest {
     #chatgpt
     #currentQuestion
 
@@ -115,3 +116,5 @@ export class PassingOfTest extends PreparingTest {
         setInterval(launch, 2500)
     }
 }
+
+export default PassingOfTest;
