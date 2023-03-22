@@ -4,7 +4,7 @@ import PreparingTest from './preparing-test-service.js'
 import {errorPrint} from '../index.js'
 import ChatGPTService from './chatgpt-service.js'
 
-class PassingOfTest extends PreparingTest {
+export default class PassingOfTest extends PreparingTest {
     #chatgpt
     #currentQuestion
 
@@ -116,5 +116,3 @@ class PassingOfTest extends PreparingTest {
         setInterval(launch, 2500)
     }
 }
-
-export default PassingOfTest;

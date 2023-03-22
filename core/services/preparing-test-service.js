@@ -5,7 +5,7 @@ import promptSync from 'prompt-sync'
 
 import {errorPrint} from '../index.js'
 
-class PreparingTest {
+export default class PreparingTest {
     #prompt
 
     constructor() {
@@ -98,5 +98,3 @@ class PreparingTest {
         }, 1000000000)
     }
 }
-
-export default PreparingTest;
