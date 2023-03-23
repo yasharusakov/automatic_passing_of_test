@@ -1,16 +1,14 @@
 import {By, until} from 'selenium-webdriver'
 
 import PreparingTest from './preparing-test-service.js'
-import {errorPrint} from '../index.js'
 import ChatGPTService from './chatgpt-service.js'
+import {errorPrint, random} from '../index.js'
 
 export default class PassingOfTest extends PreparingTest {
-    #chatgpt
     #currentQuestion
 
     constructor() {
         super()
-        this.#chatgpt = new ChatGPTService()
         this.#currentQuestion = 1
     }
 
@@ -21,53 +19,86 @@ export default class PassingOfTest extends PreparingTest {
     }
 
     #getQuestionAndAnswers = async (condition) => {
+        const isDisplayedImage = await this.driver.findElement(By.css('.question-option-image')).isDisplayed()
+            .then(() => true)
+            .catch(() => false)
+
         const [{value: question}, {value: elements}] = await Promise.allSettled([
             this.driver.wait(until.elementLocated(By.css('.test-content-text-inner p'))).getText(),
-            this.driver.wait(until.elementsLocated(By.className('question-option-inner-content')))
+            this.driver.wait(until.elementsLocated(By.css(isDisplayedImage ? '.question-option-image' : '.question-option-inner-content')))
         ])
 
+        if (isDisplayedImage && !condition) {
+            return [question.trim(), null, elements, isDisplayedImage]
+        }
+
         const answers = await Promise.allSettled(elements.map(async (element, index) => {
+
+            if (isDisplayedImage) {
+                const src = await element.getAttribute('style')
+                return src.slice(src.indexOf('https'), src.lastIndexOf('"'))
+            }
+
             const paragraphs = await element.findElements(By.css('p'))
-                .catch(errorPrint)
 
             const answer = await Promise.allSettled(paragraphs.map(async paragraph => await paragraph.getText()))
                 .then(data => data.map(item => item.value).join(' ').trim())
-                .catch(errorPrint)
 
-            return !condition ? `(${index + 1}) : ${answer}, ` : answer
+            return condition ? answer : `(${index + 1}) : ${answer}, `
         }))
             .then(answers => answers.map(answer => answer.value))
-            .catch(errorPrint)
 
         return [question.trim(), answers, elements]
     }
 
     #usingAI = async () => {
-        const [question, answers, elements] = await this.#getQuestionAndAnswers(false)
+        const [question, answers, elements, isDisplayedImage] = await this.#getQuestionAndAnswers(false)
         const formattedAnswers = JSON.stringify(answers, null, 3)
         const isMultiQuiz = await this.#checkMultiQuiz()
+
+        const randomForAI = async () => {
+            const count = random(1, elements.length)
+            const randomAnswers = []
+
+            if (!isMultiQuiz) return await elements[random(0, elements.length - 1)].click()
+
+            while (randomAnswers.length !== count) {
+                const randomAnswer = random(0, elements.length - 1)
+                if (randomAnswers.includes(randomAnswer)) return
+                randomAnswers.push(randomAnswer)
+            }
+
+            return await Promise.allSettled(randomAnswers.map(async answer => {
+                await elements[answer].click()
+            }))
+                .then(async () => {
+                    if (isMultiQuiz) {
+                        await this.driver.findElement(By.className('test-multiquiz-save-button')).click()
+                    }
+                })
+        }
+
+        if (isDisplayedImage) return await randomForAI()
 
         // Templates for ChatGPT
         const templateOne = `Вкажи правильну відповідь тільки цифрою. Question: ${question}. Answers: ${formattedAnswers}`
         const templateMany = `Вкажи правильні відповіді тільки цифрами. Question: ${question}. Answers: ${formattedAnswers}`
 
         // Send request to ChatGPT and get response
-        const data = await this.#chatgpt.query(isMultiQuiz ? templateMany : templateOne)
+        const data = await ChatGPTService.query(isMultiQuiz ? templateMany : templateOne)
             .catch(errorPrint)
+
+        if (!data) return await randomForAI()
 
         let rightAnswers = data.split(',')
             .map(item => {
                 const number = Number(item.replace(/\D/g, '')[0])
-                if (number && number <= answers.length) {
-                    return number
-                }
+                if (number && number <= answers.length) return number
             })
             .filter(item => item)
 
         // Actions on webpage to pass the test
-        await Promise.allSettled(rightAnswers.map(async rightAnswer => {
-            await elements[Number(rightAnswer) - 1].click()
-        }))
+        await Promise.allSettled(rightAnswers.map(async rightAnswer => await elements[Number(rightAnswer) - 1].click()))
             .then(async () => {
                 if (isMultiQuiz) {
                     await this.driver.findElement(By.className('test-multiquiz-save-button')).click()

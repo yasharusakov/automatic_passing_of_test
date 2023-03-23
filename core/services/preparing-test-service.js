@@ -2,7 +2,6 @@ import {Browser, Builder, By, until, Key} from 'selenium-webdriver'
 import {getRandom as createRandomUserAgent} from 'random-useragent'
 import {Options as FirefoxOptions} from 'selenium-webdriver/firefox.js'
 import promptSync from 'prompt-sync'
-
 import {errorPrint} from '../index.js'
 
 export default class PreparingTest {
@@ -61,11 +60,21 @@ export default class PreparingTest {
             const question = await item.findElement(By.css('.homework-stat-question-line p')).getText()
                 .then(data => data.trim())
 
-            const answers = await item.findElements(By.css('.homework-stat-question-line .homework-stat-options .homework-stat-option-line .correct p'))
-                .then(async answers => {
-                    return await Promise.allSettled(answers.map(async answer => {
-                        return await answer.getText()
-                            .then(data => data.trim())
+            let isDisplayedImage
+
+            try {
+                isDisplayedImage = await item.findElement(By.css('.homework-stat-question-line .homework-stat-options .homework-stat-option-line .correct img')).isDisplayed()
+            } catch (e) {
+                isDisplayedImage = false
+            }
+
+            const answers = await item.findElements(By.css(`.homework-stat-question-line .homework-stat-options .homework-stat-option-line .correct ${isDisplayedImage ? 'img' : 'p'}`))
+                .then(async data => {
+                    return await Promise.allSettled(data.map(async item => {
+                        if (isDisplayedImage) return await item.getAttribute('src')
+
+                        return await item.getText()
+                            .then(text => text.trim())
                     }))
                         .then(data => data.map(item => item.value))
                 })
