@@ -1,10 +1,27 @@
+/* Copyright 2023 yasharusakov and Transparency010101
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+*/
+
 import {Browser, Builder, By, until, Key} from 'selenium-webdriver'
-import {getRandom as createRandomUserAgent} from 'random-useragent'
+import {getRandom as getRandomUserAgent, getRandomData} from 'random-useragent'
 import {Options as FirefoxOptions} from 'selenium-webdriver/firefox.js'
 import promptSync from 'prompt-sync'
 import {errorPrint} from '../index.js'
 
 export default class PreparingTest {
+    #userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/113.0'
     #prompt
 
     constructor() {
@@ -38,8 +55,8 @@ export default class PreparingTest {
             options.setPreference('network.proxy.socks_version', 5)
         }
 
-        // Random User-Agent
-        options.setPreference('general.useragent.override', createRandomUserAgent())
+        // Random User-Agent(пока что не рандомный, временно)
+        options.setPreference('general.useragent.override', this.#userAgent)
 
         const driver = new Builder()
             .forBrowser(Browser.FIREFOX)
@@ -63,7 +80,9 @@ export default class PreparingTest {
             let isDisplayedImage
 
             try {
-                isDisplayedImage = await item.findElement(By.css('.homework-stat-question-line .homework-stat-options .homework-stat-option-line .correct img')).isDisplayed()
+                isDisplayedImage = await item.findElement(
+                    By.css('.homework-stat-question-line .homework-stat-options .homework-stat-option-line .correct img')
+                ).isDisplayed()
             } catch (e) {
                 isDisplayedImage = false
             }

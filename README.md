@@ -1,38 +1,72 @@
-# To use this project follow these steps
+# What is it
+We shall not tell... yet)
 
-**Works only with firefox browser!** <br>
-**And remmeber, every step of this instruction is important!**
+___
+# Installing
 
-#### Download driver for firefox
-  * Arch/Manjaro
-    - `$ sudo pacman -S geckodriver`
+## Windows: *not yet... probably*
+## Mac OS: *never*
 
+## Arch/Manjaro:
+```
+sudo pacman -S geckodriver
+```
 
-#### To Install all packages use `npm i` or `npm install` in terminal
+## Debian Ubuntu Linux mint: *not yet... probably*
 
-### Create a .env file with these fiels
-* API_KEY=`YOUR API KEY`
-  * Your api key you can find there https://platform.openai.com/account/api-keys
+## Installing packages
+In root project's write this:
+```
+npm i
+```
+or 
+```
+npm install
+```
+## Set up Chat-GPT3 job
 
-#### To start app input `npm start` in terminal
+### Create a '.env' file in root project's and write there:
+```
+API_KEY=`YOUR API KEY`
+```
+Your api key you can find there https://platform.openai.com/account/api-keys
+If you've registered there.
 
-# Tor network
+## Set up support Tor 
 
 ### Download Tor network
-* Arch/Manjaro
-  - `$ sudo pacman -S tor`
 
-Open terminal and input: 
-- `vi /etc/tor/torrc`
+#### Windows: *not yet... probably*
 
-### Write it there: <br>
+#### Debian Ubuntu Linux Mint: *not yet... probably*
 
+#### Arch/Manjaro:
+```
+sudo pacman -S tor
+```
+
+Open terminal, launch this command `vi /etc/tor/torrc` and write it in there:
 ```
 SocksPort 9050
-SocksPort 9052 
-SocksPort 9053 
+SocksPort 9052
+SocksPort 9053
 SocksPort 9054
 ```
+___
+# Usage
 
-#### In terminal input `sudo tor`
-#### To start app with tor network input `npm run tor` in terminal
+## Run program:
+```
+npm start
+```
+
+## Run program with Tor:
+Open two terminals, in one of them launch: `sudo tor`, in second: 
+```
+npm run tor
+```
+___
+## Appendix
+[**Authors**](./Authors)
+
+[**License**](./LICENSE)
