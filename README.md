@@ -23,14 +23,6 @@ or
 ```
 npm install
 ```
-## Set up Chat-GPT3 job
-
-### Create a '.env' file in root project's and write there:
-```
-API_KEY=`YOUR API KEY`
-```
-Your api key you can find there https://platform.openai.com/account/api-keys
-If you've registered there.
 
 ## Set up support Tor 
 

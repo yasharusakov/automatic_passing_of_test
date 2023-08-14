@@ -15,32 +15,24 @@
 */
 
 import {Browser, Builder, By, until, Key} from 'selenium-webdriver'
-import {getRandom as getRandomUserAgent, getRandomData} from 'random-useragent'
+import {getRandom as getRandomUserAgent} from 'random-useragent'
 import {Options as FirefoxOptions} from 'selenium-webdriver/firefox.js'
 import promptSync from 'prompt-sync'
-import {errorPrint} from '../index.js'
 
 export default class PreparingTest {
-    #userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/113.0'
     #prompt
 
     constructor() {
         this.#prompt = promptSync()
         this.username = this.#prompt('Enter username: ')
         this.code = this.#prompt('Enter code: ')
-        console.log(`
-        Methods:
-        1) Using ChatGPT - Artificial Intelligence, you trust only AI
-        2) Source answers
-        `)
-        this.method = this.#prompt('Enter number of method: ')
-        this.urlOfAnswers = this.method === '2' && this.#prompt('Enter url of answers: ')
+        this.urlOfAnswers = this.#prompt('Enter url of answers: ')
         this.driver = this.#createDriver()
         this.urlOfRegistration = 'https://naurok.com.ua/test/join'
         this.sourceData = null
     }
 
-    #createDriver = () => {
+    #createDriver() {
         const socks = [9050, 9052, 9053, 9054]
         const randomSock = socks[Math.floor(Math.random() * socks.length)]
 
@@ -56,7 +48,7 @@ export default class PreparingTest {
         }
 
         // Random User-Agent(пока что не рандомный, временно)
-        options.setPreference('general.useragent.override', this.#userAgent)
+        options.setPreference('general.useragent.override', getRandomUserAgent())
 
         const driver = new Builder()
             .forBrowser(Browser.FIREFOX)
@@ -66,26 +58,24 @@ export default class PreparingTest {
         return driver
     }
 
-    getSourceAnswers = async () => {
-        if (this.method !== '2') return
+    async isDisplayedByCss(item, selector) {
+        try {
+            await [item].findElement(By.css(selector)).isDisplayed()
+            return true
+        } catch {
+            return false
+        }
+    }
 
+    async getSourceAnswers() {
         await this.driver.get(this.urlOfAnswers)
 
         const sourceElements = await this.driver.wait(until.elementsLocated(By.css('.homework-stats .content-block')))
 
         this.sourceData = await Promise.allSettled(sourceElements.map(async item => {
             const question = await item.findElement(By.css('.homework-stat-question-line p')).getText()
-                .then(data => data.trim())
 
-            let isDisplayedImage
-
-            try {
-                isDisplayedImage = await item.findElement(
-                    By.css('.homework-stat-question-line .homework-stat-options .homework-stat-option-line .correct img')
-                ).isDisplayed()
-            } catch (e) {
-                isDisplayedImage = false
-            }
+            const isDisplayedImage = await this.isDisplayedByCss(item, '.homework-stat-question-line .homework-stat-options .homework-stat-option-line .correct img')
 
             const answers = await item.findElements(By.css(`.homework-stat-question-line .homework-stat-options .homework-stat-option-line .correct ${isDisplayedImage ? 'img' : 'p'}`))
                 .then(async data => {
@@ -97,32 +87,31 @@ export default class PreparingTest {
                     }))
                         .then(data => data.map(item => item.value))
                 })
-                .catch(errorPrint)
 
-            return [question, answers]
+            return [question.trim(), answers]
         }))
             .then(data => {
                 const object = {}
-
                 data.forEach(item => {
-                    const el = item.value
-                    object[el[0]] = el[1]
+                    const [question, answers] = item.value
+                    object[question] = answers
                 })
-
                 return object
             })
     }
 
-    joinTest = async () => {
+    async joinTest() {
         await this.driver.get(this.urlOfRegistration)
         await this.driver.findElement(By.id('joinform-name')).sendKeys(this.username, Key.ENTER)
         await this.driver.findElement(By.id('joinform-gamecode')).sendKeys(this.code, Key.ENTER)
         await this.driver.findElement(By.className('join-button-test')).click()
     }
 
-    driverQuit = async () => {
-        setTimeout(async () => {
-            await this.driver.quit()
-        }, 1000000000)
+    driverQuit() {
+        try {
+            setTimeout(async () => {
+                await this.driver.quit()
+            }, 180000)
+        } catch (error) {}
     }
 }
