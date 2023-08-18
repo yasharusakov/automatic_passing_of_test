@@ -44,7 +44,9 @@ export default class PassingOfTest extends PreparingOfTest {
             }))
 
             return [questionElement.trim(), answers, elements]
-        } catch (error) {}
+        } catch (error) {
+            console.error(`Error in getQuestionAndAnswers: ${error}`)
+        }
     }
 
     usingSource = async () => {
@@ -58,10 +60,12 @@ export default class PassingOfTest extends PreparingOfTest {
                 }
             })).then(async () => {
                 if (isMultiQuiz) {
-                    await this.driver.findElement(By.className('test-multiquiz-save-button')).click()
+                    await this.driver.findElement(By.css('.test-multiquiz-save-button')).click()
                 }
             })
-        } catch (error) {}
+        } catch (error) {
+            console.error(`Error in usingSource: ${error}`)
+        }
     }
 
     listenCurrentQuestion = () => {
@@ -75,7 +79,9 @@ export default class PassingOfTest extends PreparingOfTest {
                     this.#currentQuestion = number
                     await this.usingSource()
                 }
-            } catch (error) {}
+            } catch (error) {
+                console.error(`Error in listenCurrentQuestion: ${error}`)
+            }
         }
 
         setInterval(launch, 2500)

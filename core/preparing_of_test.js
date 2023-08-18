@@ -47,7 +47,7 @@ export default class PreparingTest {
             options.setPreference('network.proxy.socks_version', 5)
         }
 
-        // Random User-Agent(пока что не рандомный, временно)
+        // Random User-Agent
         options.setPreference('general.useragent.override', getRandomUserAgent())
 
         const driver = new Builder()
@@ -59,59 +59,62 @@ export default class PreparingTest {
     }
 
     async isDisplayedByCss(item, selector) {
-        try {
-            await [item].findElement(By.css(selector)).isDisplayed()
-            return true
-        } catch {
-            return false
-        }
+        return await item.findElement(By.css(selector)).isDisplayed()
+            .then(() => true)
+            .catch(() => false)
     }
 
     async getSourceAnswers() {
-        await this.driver.get(this.urlOfAnswers)
+        try {
+            await this.driver.get(this.urlOfAnswers)
 
-        const sourceElements = await this.driver.wait(until.elementsLocated(By.css('.homework-stats .content-block')))
+            const sourceElements = await this.driver.wait(until.elementsLocated(By.css('.homework-stats .content-block')))
 
-        this.sourceData = await Promise.allSettled(sourceElements.map(async item => {
-            const question = await item.findElement(By.css('.homework-stat-question-line p')).getText()
+            this.sourceData = await Promise.all(sourceElements.map(async item => {
+                const question = await item.findElement(By.css('.homework-stat-question-line p')).getText()
 
-            const isDisplayedImage = await this.isDisplayedByCss(item, '.homework-stat-question-line .homework-stat-options .homework-stat-option-line .correct img')
+                const isDisplayedImage = await this.isDisplayedByCss(item, '.homework-stat-question-line .homework-stat-options .homework-stat-option-line .correct img')
 
-            const answers = await item.findElements(By.css(`.homework-stat-question-line .homework-stat-options .homework-stat-option-line .correct ${isDisplayedImage ? 'img' : 'p'}`))
-                .then(async data => {
-                    return await Promise.allSettled(data.map(async item => {
-                        if (isDisplayedImage) return await item.getAttribute('src')
+                const answers = await item.findElements(By.css(`.homework-stat-question-line .homework-stat-options .homework-stat-option-line .correct ${isDisplayedImage ? 'img' : 'p'}`))
+                    .then(async data => {
+                        return await Promise.all(data.map(async item => {
+                            if (isDisplayedImage) return await item.getAttribute('src')
+                            return await item.getText().then(text => text.trim())
+                        }))
+                    })
 
-                        return await item.getText()
-                            .then(text => text.trim())
-                    }))
-                        .then(data => data.map(item => item.value))
-                })
-
-            return [question.trim(), answers]
-        }))
-            .then(data => {
+                return [question.trim(), answers]
+            })).then(data => {
                 const object = {}
                 data.forEach(item => {
-                    const [question, answers] = item.value
+                    const [question, answers] = item
                     object[question] = answers
                 })
                 return object
             })
+        } catch (error) {
+            console.error(`Error in getSourceAnswers: ${error}`)
+        }
     }
 
     async joinTest() {
-        await this.driver.get(this.urlOfRegistration)
-        await this.driver.findElement(By.id('joinform-name')).sendKeys(this.username, Key.ENTER)
-        await this.driver.findElement(By.id('joinform-gamecode')).sendKeys(this.code, Key.ENTER)
-        await this.driver.findElement(By.className('join-button-test')).click()
+        try {
+            await this.driver.get(this.urlOfRegistration)
+            await this.driver.findElement(By.id('joinform-name')).sendKeys(this.username, Key.ENTER)
+            await this.driver.findElement(By.id('joinform-gamecode')).sendKeys(this.code, Key.ENTER)
+            await this.driver.findElement(By.className('join-button-test')).click()
+        } catch (error) {
+            console.error(`Error in joinTest: ${error}`)
+        }
     }
 
     driverQuit() {
         try {
             setTimeout(async () => {
                 await this.driver.quit()
-            }, 180000)
-        } catch (error) {}
+            }, 18000000)
+        } catch (error) {
+            console.error(`Error in driverQuit: ${error}`)
+        }
     }
 }
