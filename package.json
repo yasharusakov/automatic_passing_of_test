@@ -5,6 +5,7 @@
   "main": "core/index.js",
   "scripts": {
     "start": "node core/index.js",
+    "debug": "cross-env MODE=debug node core/index.js",
     "tor": "cross-env TOR=enable node core/index.js"
   },
   "type": "module",

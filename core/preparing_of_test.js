@@ -32,6 +32,12 @@ export default class PreparingTest {
         this.sourceData = null
     }
 
+    debugMode(text, data) {
+        if (process.env.MODE === 'debug') {
+            console.log(text, data)
+        }
+    }
+
     #createDriver() {
         const socks = [9050, 9052, 9053, 9054]
         const randomSock = socks[Math.floor(Math.random() * socks.length)]
@@ -59,9 +65,13 @@ export default class PreparingTest {
     }
 
     async isDisplayedByCss(item, selector) {
-        return await item.findElement(By.css(selector)).isDisplayed()
+        const isDisplayed = await item.findElement(By.css(selector)).isDisplayed()
             .then(() => true)
             .catch(() => false)
+
+        this.debugMode('Is displayed: ', isDisplayed)
+
+        return isDisplayed
     }
 
     async getSourceAnswers() {
@@ -70,7 +80,7 @@ export default class PreparingTest {
 
             const sourceElements = await this.driver.wait(until.elementsLocated(By.css('.homework-stats .content-block')))
 
-            this.sourceData = await Promise.all(sourceElements.map(async item => {
+            const sourceData = await Promise.all(sourceElements.map(async item => {
                 const question = await item.findElement(By.css('.homework-stat-question-line p')).getText()
 
                 const isDisplayedImage = await this.isDisplayedByCss(item, '.homework-stat-question-line .homework-stat-options .homework-stat-option-line .correct img')
@@ -92,6 +102,10 @@ export default class PreparingTest {
                 })
                 return object
             })
+
+            this.sourceData = sourceData
+
+            this.debugMode('Right answers: ', sourceData)
         } catch (error) {
             console.error(`Error in getSourceAnswers: ${error}`)
         }

@@ -54,6 +54,10 @@ export default class PassingOfTest extends PreparingOfTest {
             const [question, answers, elements] = await this.#getQuestionAndAnswers()
             const isMultiQuiz = await this.isDisplayedByCss(this.driver, '.test-multiquiz-save-line span')
 
+            this.debugMode('[question, answers, elements]: ', [question, answers, elements])
+            this.debugMode('is multiquiz: ', isMultiQuiz)
+            this.debugMode('Right answers: : ', this.sourceData[question])
+
             await Promise.all(answers.map(async (item, i) => {
                 if (this.sourceData[question].includes(item)) {
                     await elements[i].click()
@@ -76,6 +80,7 @@ export default class PassingOfTest extends PreparingOfTest {
                 const number = Number(data)
 
                 if (number !== this.#currentQuestion) {
+                    this.debugMode('Current active question: ', number)
                     this.#currentQuestion = number
                     await this.usingSource()
                 }
